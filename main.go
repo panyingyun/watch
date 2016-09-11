@@ -1,57 +1,72 @@
 package main
 
 import (
-
-	//  "strconv"
-	//	"strings"
-	//	"time"
-
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	"github.com/panyingyun/wath/backend"
-	loralog "github.com/panyingyun/wath/loralog"
+	"github.com/panyingyun/watch/backend"
 )
 
-var app = "application/+/node/+/#"
-var gw = "gateway/+/#"
-
 func run(c *cli.Context) error {
+
 	//Connect to MQTT(for example:"tcp://127.0.0.1:1883", "pub", "pub")
 	mqtt, err := backend.NewBackend(c.String("mqtt-server"), c.String("mqtt-username"), c.String("mqtt-password"))
 	if err != nil {
-		loralog.Error("can not connect mqtt server")
+		log.Error("can not connect mqtt server")
 		return err
 	}
 	defer mqtt.Close()
 
-	//Application Topic
-	if err := mqtt.SubscribeTopic(app); err != nil {
-		loralog.Errorf("SubscribeTopic %v Error", app)
-		return err
+	//Gateway Topic
+	gw := c.String("gw-topic")
+	if len(gw) > 0 {
+		if err := mqtt.SubscribeTopic(gw); err != nil {
+			log.Errorf("SubscribeTopic %v Error", gw)
+			return err
+		}
+		defer mqtt.UnSubscribeTopic(gw)
 	}
-	defer mqtt.UnSubscribeTopic(app)
 
-	if err := mqtt.SubscribeTopic(gw); err != nil {
-		loralog.Errorf("SubscribeTopic %v Error", gw)
-		return err
+	//Application Topic
+	app := c.String("app-topic")
+	if len(app) > 0 {
+		if err := mqtt.SubscribeTopic(app); err != nil {
+			log.Errorf("SubscribeTopic %v Error", app)
+			return err
+		}
+		defer mqtt.UnSubscribeTopic(app)
 	}
-	defer mqtt.UnSubscribeTopic(gw)
 
 	//When receive rxdata, then write to database
 	go func() {
 		for rxData := range mqtt.RxDataChan() {
-			loralog.Debugf("rxData = %v", rxData)
+			if strings.HasPrefix(rxData.Topic, "gateway") {
+				log.WithFields(log.Fields{
+					"topic": rxData.Topic,
+				}).Info("[GateWay]")
+				log.WithFields(log.Fields{
+					"msg": rxData.Msg,
+				}).Info("[GateWay]")
+			} else {
+				log.WithFields(log.Fields{
+					"topic": rxData.Topic,
+				}).Info("[App]")
+				log.WithFields(log.Fields{
+					"msg": rxData.Msg,
+				}).Info("[App]")
+			}
 		}
 	}()
 
 	//quit when receive end signal
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	loralog.Infof("signal received signal %v", <-sigChan)
-	loralog.Warn("shutting down server")
+	log.Infof("signal received signal %v", <-sigChan)
+	log.Info("shutting down server")
 	return nil
 }
 
@@ -80,6 +95,18 @@ func main() {
 			Usage:  "MQTT password",
 			Value:  "pub",
 			EnvVar: "MQTT_PASSWORD",
+		},
+		cli.StringFlag{
+			Name:   "gw-topic",
+			Usage:  "GW topic",
+			Value:  "",
+			EnvVar: "GW_TOPIC",
+		},
+		cli.StringFlag{
+			Name:   "app-topic",
+			Usage:  "APP topic",
+			Value:  "",
+			EnvVar: "APP_TOPIC",
 		},
 	}
 	app.Run(os.Args)

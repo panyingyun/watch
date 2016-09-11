@@ -1,0 +1,1 @@
+watch.exe --mqtt-server tcp://121.40.69.61:1883 --gw-topic  gateway/+/stats  --app-topic application/+/node/+/rx

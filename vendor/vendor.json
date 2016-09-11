@@ -1,0 +1,37 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "JiTaaqMJ0WfwRKycs3y6rDKZgAk=",
+			"path": "github.com/Sirupsen/logrus",
+			"revision": "3ec0642a7fb6488f65b06f9040adc67e3990296a",
+			"revisionTime": "2016-08-29T20:23:21Z"
+		},
+		{
+			"checksumSHA1": "+JA8qD8kRQ6v8dDlKCkAMYOq9Jg=",
+			"path": "github.com/codegangsta/cli",
+			"revision": "168c95418e66e019fe17b8f4f5c45aa62ff80e23",
+			"revisionTime": "2016-08-01T03:09:57Z"
+		},
+		{
+			"checksumSHA1": "7bJJxX3dYxil97O4P59IZx/xTQQ=",
+			"path": "github.com/eclipse/paho.mqtt.golang",
+			"revision": "44eec149d4433449add74781ffc86cc60d3f1598",
+			"revisionTime": "2016-06-30T14:40:56Z"
+		},
+		{
+			"checksumSHA1": "c03puLfhf7toeIMmZBLkIaMqX5M=",
+			"path": "github.com/eclipse/paho.mqtt.golang/packets",
+			"revision": "44eec149d4433449add74781ffc86cc60d3f1598",
+			"revisionTime": "2016-06-30T14:40:56Z"
+		},
+		{
+			"checksumSHA1": "likOl7O0BJntqagR050kkOBuY4o=",
+			"path": "golang.org/x/net/websocket",
+			"revision": "9313baa13d9262e49d07b20ed57dceafcd7240cc",
+			"revisionTime": "2016-09-07T15:25:26Z"
+		}
+	],
+	"rootPath": "github.com/panyingyun/watch"
+}

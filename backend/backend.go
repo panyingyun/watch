@@ -3,24 +3,29 @@ package backend
 import (
 	"sync"
 
-	loralog "github.com/panyingyun/wath/loralog"
-
+	log "github.com/Sirupsen/logrus"
 	"github.com/eclipse/paho.mqtt.golang"
 )
+
+//Lora Gateway and Application Message Receive
+type LoraMsg struct {
+	Msg   string
+	Topic string
+}
 
 // Backend implements a MQTT pub-sub backend.
 type Backend struct {
 	conn   mqtt.Client
-	rxChan chan models.TabRxData
+	rxChan chan LoraMsg
+	topics map[string]struct{}
 	mutex  sync.RWMutex
-	topic  string
 }
 
 // NewBackend creates a new Backend.
 func NewBackend(server, username, password string) (*Backend, error) {
 	b := Backend{
-		rxChan: make(chan models.TabRxData),
-		topic:  "",
+		rxChan: make(chan LoraMsg),
+		topics: make(map[string]struct{}),
 	}
 
 	opts := mqtt.NewClientOptions()
@@ -30,7 +35,7 @@ func NewBackend(server, username, password string) (*Backend, error) {
 	opts.SetOnConnectHandler(b.onConnected)
 	opts.SetConnectionLostHandler(b.onConnectionLost)
 
-	loralog.Infof("backend/mqttpubsub: connecting to mqtt broker %v", server)
+	log.Infof(" [MQTT] connecting to mqtt server %v", server)
 	b.conn = mqtt.NewClient(opts)
 	if token := b.conn.Connect(); token.Wait() && token.Error() != nil {
 		return nil, token.Error()
@@ -42,11 +47,11 @@ func NewBackend(server, username, password string) (*Backend, error) {
 // Close closes the backend.
 func (b *Backend) Close() {
 	b.conn.Disconnect(250) // wait 250 milisec to complete pending actions
-	loralog.Info("backend/mqttpubsub: Disconnect mqtt broker")
+	log.Info(" [MQTT] Disconnect mqtt server")
 }
 
 // RxDataChan returns the TabRxData channel.
-func (b *Backend) RxDataChan() chan models.TabRxData {
+func (b *Backend) RxDataChan() chan LoraMsg {
 	return b.rxChan
 }
 
@@ -55,11 +60,11 @@ func (b *Backend) SubscribeTopic(topic string) error {
 	defer b.mutex.Unlock()
 	b.mutex.Lock()
 
-	loralog.Infof("backend/mqttpubsub: subscribing to topic %v", topic)
+	log.Infof(" [MQTT] subscribing to topic %v", topic)
 	if token := b.conn.Subscribe(topic, 0, b.rxDataHandler); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	b.topic = topic
+	b.topics[topic] = struct{}{}
 	return nil
 }
 
@@ -68,37 +73,35 @@ func (b *Backend) UnSubscribeTopic(topic string) error {
 	defer b.mutex.Unlock()
 	b.mutex.Lock()
 
-	loralog.Infof("backend/mqttpubsub: unsubscribing from topic %v", topic)
+	log.Infof(" [MQTT] unsubscribing from topic is %v", topic)
 	if token := b.conn.Unsubscribe(topic); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	b.topic = ""
+	delete(b.topics, topic)
 	return nil
 }
 
 func (b *Backend) rxDataHandler(c mqtt.Client, msg mqtt.Message) {
-	loralog.Infof("backend/mqttpubsub: packet received from topic %v", msg.Topic())
-	var rxData models.TabRxData
-	if err := rxData.Unmarshal(msg.Payload(), msg.Topic()); err != nil {
-		loralog.Errorf("backend/mqttpubsub: decode rxData error: %s", err)
-		return
-	}
+	var rxData LoraMsg
+	rxData.Msg = string(msg.Payload())
+	rxData.Topic = msg.Topic()
 	b.rxChan <- rxData
 }
 
 func (b *Backend) onConnected(c mqtt.Client) {
-	if b.topic == "" {
+	log.Info(" [MQTT] ", "onConnected to mqtt broker")
+	if len(b.topics) == 0 {
+		log.Info(" [MQTT] ", "there is no topic here!")
 		return
 	}
 	defer b.mutex.RUnlock()
 	b.mutex.RLock()
 
-	loralog.Info("backend/mqttpubsub: onConnected to mqtt broker")
-	if token := b.conn.Subscribe(b.topic, 0, b.rxDataHandler); token.Wait() && token.Error() != nil {
-		return
+	for topic := range b.topics {
+		b.conn.Subscribe(topic, 2, b.rxDataHandler)
 	}
 }
 
 func (b *Backend) onConnectionLost(c mqtt.Client, reason error) {
-	loralog.Errorf("backend/mqttpubsub: mqtt onConnectionLost error: %s", reason)
+	log.Errorf(" [MQTT] onConnectionLost error %v", reason)
 }
