@@ -12,7 +12,6 @@ import (
 )
 
 func run(c *cli.Context) error {
-
 	//Connect to MQTT(for example:"tcp://127.0.0.1:1883", "pub", "pub")
 	mqtt, err := backend.NewBackend(c.String("mqtt-server"), c.String("mqtt-username"), c.String("mqtt-password"))
 	if err != nil {
