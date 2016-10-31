@@ -1,5 +1,5 @@
 # watch
-watch message  received from lowan server with gateway and application 
+watch message received loraserver/gateway/application by LoRaWAN™ 
 
 ### [usage]
 watch.exe --mqtt-server tcp://127.0.0.1:1883 --gw-topic  gateway/+/stats  --app-topic application/+/node/+/rx
