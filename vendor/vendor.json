@@ -27,6 +27,24 @@
 			"revisionTime": "2016-06-30T14:40:56Z"
 		},
 		{
+			"checksumSHA1": "F/FbF+neonWYOABcBilzZ9vRVGE=",
+			"path": "github.com/fatih/color",
+			"revision": "dea9d3a26a087187530244679c1cfb3a42937794",
+			"revisionTime": "2016-10-02T08:12:59Z"
+		},
+		{
+			"checksumSHA1": "kieUhLdXLUMTwTRxiA2WO7Xkk30=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "ed8eb9e318d7a84ce5915b495b7d35e0cfe7b5a8",
+			"revisionTime": "2016-07-31T23:54:17Z"
+		},
+		{
+			"checksumSHA1": "Xe1H36zS96+8urk4a0bYdNY3mnw=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8",
+			"revisionTime": "2016-08-06T12:27:52Z"
+		},
+		{
 			"checksumSHA1": "likOl7O0BJntqagR050kkOBuY4o=",
 			"path": "golang.org/x/net/websocket",
 			"revision": "9313baa13d9262e49d07b20ed57dceafcd7240cc",
