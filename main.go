@@ -6,8 +6,8 @@ import (
 	"strings"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	log "github.com/fatih/color"
 	"github.com/panyingyun/watch/backend"
 )
 
@@ -15,7 +15,7 @@ func run(c *cli.Context) error {
 	//Connect to MQTT(for example:"tcp://127.0.0.1:1883", "pub", "pub")
 	mqtt, err := backend.NewBackend(c.String("mqtt-server"), c.String("mqtt-username"), c.String("mqtt-password"))
 	if err != nil {
-		log.Error("can not connect mqtt server")
+		log.Red("can not connect mqtt server")
 		return err
 	}
 	defer mqtt.Close()
@@ -24,7 +24,7 @@ func run(c *cli.Context) error {
 	gw := c.String("gw-topic")
 	if len(gw) > 0 {
 		if err := mqtt.SubscribeTopic(gw); err != nil {
-			log.Errorf("SubscribeTopic %v Error", gw)
+			log.Red("SubscribeTopic %v Error", gw)
 			return err
 		}
 		defer mqtt.UnSubscribeTopic(gw)
@@ -34,7 +34,7 @@ func run(c *cli.Context) error {
 	app := c.String("app-topic")
 	if len(app) > 0 {
 		if err := mqtt.SubscribeTopic(app); err != nil {
-			log.Errorf("SubscribeTopic %v Error", app)
+			log.Red("SubscribeTopic %v Error", app)
 			return err
 		}
 		defer mqtt.UnSubscribeTopic(app)
@@ -43,20 +43,16 @@ func run(c *cli.Context) error {
 	//When receive rxdata, then write to database
 	go func() {
 		for rxData := range mqtt.RxDataChan() {
-			if strings.HasPrefix(rxData.Topic, "gateway") {
-				log.WithFields(log.Fields{
-					"topic": rxData.Topic,
-				}).Info("[GateWay]")
-				log.WithFields(log.Fields{
-					"msg": rxData.Msg,
-				}).Info("[GateWay]")
+			topic := rxData.Topic
+			if strings.HasPrefix(topic, "gateway") {
+				log.Green("[GW] topic = %v, msg = %v", topic, rxData.Msg)
+			} else if strings.Contains(topic, "mac/rx") ||
+				strings.Contains(topic, "mac/tx") ||
+				strings.Contains(topic, "mac/error") ||
+				strings.Contains(topic, "rxinfo") {
+				log.Cyan("[MAC] topic = %v, msg = %v", topic, rxData.Msg)
 			} else {
-				log.WithFields(log.Fields{
-					"topic": rxData.Topic,
-				}).Info("[App]")
-				log.WithFields(log.Fields{
-					"msg": rxData.Msg,
-				}).Info("[App]")
+				log.Magenta("[APP] topic = %v, msg = %v", topic, rxData.Msg)
 			}
 		}
 	}()
@@ -64,8 +60,8 @@ func run(c *cli.Context) error {
 	//quit when receive end signal
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	log.Infof("signal received signal %v", <-sigChan)
-	log.Info("shutting down server")
+	log.White("signal received signal %v", <-sigChan)
+	log.White("shutting down server")
 	return nil
 }
 
